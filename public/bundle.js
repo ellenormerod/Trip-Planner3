@@ -551,12 +551,14 @@ const state = {
   * Instantiate the Map
   */
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoiY2Fzc2lvemVuIiwiYSI6ImNqNjZydGl5dDJmOWUzM3A4dGQyNnN1ZnAifQ.0ZIRDup0jnyUFVzUa_5d1g";
+mapboxgl.accessToken = "pk.eyJ1IjoiZWxsZW5vcm1lcm9kIiwiYSI6ImNqOGJxNjNnNDAwb2IyenA3Y2ZnMDFsaGcifQ.6E8YArPJfrzt_SGe4D77_Q";
+
+const fullstackCoords = [-74.009, 40.705] // NY
+// const fullstackCoords = [-87.6320523, 41.8881084] // CHI
 
 const map = new mapboxgl.Map({
   container: "map",
-  center: [-74.009, 40.705], // FullStack coordinates
+  center: fullstackCoords,
   zoom: 12, // starting zoom
   style: "mapbox://styles/mapbox/streets-v10" // mapbox has lots of different map styles available.
 });
@@ -613,10 +615,11 @@ const buildAttractionAssets = (category, attraction) => {
   const removeButton = document.createElement("button");
   removeButton.className = "remove-btn";
   removeButton.append("x");
-
   const itineraryItem = document.createElement("li");
   itineraryItem.className = "itinerary-item";
   itineraryItem.append(attraction.name, removeButton);
+  itineraryItem.setAttribute('id', attraction.id)
+  console.log(itineraryItem)
 
   // Create the marker
   const marker = buildMarker(category, attraction.place.location);
@@ -652,6 +655,36 @@ const buildAttractionAssets = (category, attraction) => {
 };
 
 
+if(location.hash){
+  api.fetchItineraries(location.hash.slice(1))
+  .then((res) => {
+    res.hotels.forEach(hotel=>{
+    buildAttractionAssets("hotels", hotel)
+    })
+    res.restaurants.forEach(restaurant=>{
+      buildAttractionAssets("restaurants", restaurant)
+    })
+    res.activities.forEach(activity=>{
+        buildAttractionAssets("activities", activity)
+    })
+  })
+}
+
+var saveButton = document.getElementById("save-button")
+
+saveButton.addEventListener('click', (evnt)=>{
+  var hotels = [...document.getElementById('hotels-list').children].map((child)=>{
+    return +child.getAttribute('id')
+  })
+  var restaurants = [...document.getElementById('restaurants-list').children].map((child)=>{
+    return +child.getAttribute('id')
+  })
+  var activities = [...document.getElementById('activities-list').children].map((child)=>{
+    return +child.getAttribute('id')
+  })
+  api.fetchPostedItineraries(hotels, restaurants, activities)
+})
+
 /***/ }),
 /* 2 */
 /***/ (function(module, exports) {
@@ -686,10 +719,31 @@ module.exports = g;
 const fetchAttractions = () =>
   fetch("/api")
     .then(result => result.json())
-    .catch(console.error);
+    .catch(err => console.error(err));
 
+const fetchItineraries = (id) =>
+  fetch('/api/itineraries/' + id)
+    .then(result => {
+      return result.json()})
+    .catch(err => console.error(err))
+
+const fetchPostedItineraries = (hotel, restaurant, activity) =>{
+    fetch('/api/itineraries', {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      method: 'post',
+      body: JSON.stringify({
+        hotels: hotel,
+        restaurants: restaurant,
+        activities: activity
+      }) 
+    })
+}
 module.exports = {
-  fetchAttractions
+  fetchAttractions,
+  fetchItineraries,
+  fetchPostedItineraries
 };
 
 
